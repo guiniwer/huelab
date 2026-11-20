@@ -1,0 +1,79 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Walter Turncoat', system-ui, sans-serif;
+  --font-body: '42dot Sans', 'Inter', system-ui, sans-serif;
+  --font-heading: 'Open Sans', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-card: 'Cal Sans', 'Open Sans', system-ui, sans-serif;
+  --font-mono: 'Iosevka Charon Mono', ui-monospace, monospace;
+
+  --color-ink: #000000;
+  --color-icon: #33363f;
+  --color-brick: #824c4c;
+  --color-brick-soft: #eab3b3;
+  --color-brick-strong: #d59898;
+  --color-danger: #b73636;
+  --color-success: #50b736;
+  --color-panel: #f6f6f6;
+  --color-segment: #d9d9d9;
+  --color-code-key: #7ec546;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+html,
+body {
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+}
+
+/* Ícones SVG do Figma usados como máscara, para herdarem a cor do texto (currentColor) */
+.icon {
+  display: inline-block;
+  flex: none;
+  background-color: currentColor;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+/* Slider: trilho preto preenchido até o valor (--fill) e bolinha preta 15×14 do Figma */
+.hl-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 20px;
+  background: linear-gradient(to right, #000 var(--fill, 50%), #fafafa var(--fill, 50%));
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+.hl-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 14px;
+  border-radius: 50%;
+  background: #000;
+  border: none;
+}
+.hl-range::-moz-range-thumb {
+  width: 15px;
+  height: 14px;
+  border-radius: 50%;
+  background: #000;
+  border: none;
+}
+.hl-range:focus-visible {
+  outline: 2px solid #824c4c;
+  outline-offset: 4px;
+}

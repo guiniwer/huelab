@@ -207,7 +207,7 @@ export default function Gerar() {
             regenerate()
             blurOnClick(e)
           }}
-          className="absolute top-[19px] left-1/2 z-10 flex h-[56px] -translate-x-1/2 items-center gap-2 rounded-[20px] border border-brick bg-[rgba(252,252,252,0.5)] px-[28px] text-base whitespace-nowrap shadow-[0_4px_4px_rgba(0,0,0,0.25)] backdrop-blur-sm"
+          className="absolute top-[19px] left-1/2 z-10 flex h-[56px] -translate-x-1/2 items-center gap-2 rounded-[20px] border border-brick bg-[rgba(252,252,252,0.5)] px-[28px] text-base text-on-light whitespace-nowrap shadow-[0_4px_4px_rgba(0,0,0,0.25)] backdrop-blur-sm"
         >
           Aperte
           <kbd className="rounded-[20px] border border-brick px-[30px] py-[2px] font-ui shadow-[0_4px_4px_rgba(0,0,0,0.25)]">
@@ -218,10 +218,10 @@ export default function Gerar() {
 
         {colors.map((hex, i) => {
           const dark = prefersDarkText(hex)
-          const fg = dark ? 'text-black' : 'text-white'
+          const fg = dark ? 'text-on-light' : 'text-on-dark'
           const sub = dark ? 'text-[#2b2b2b]' : 'text-[#cfcfcf]'
           const btn = `grid h-[38px] w-[42px] place-items-center rounded-[10px] border transition ${
-            dark ? 'border-black/20 hover:bg-black/10' : 'border-white/20 hover:bg-white/10'
+            dark ? 'border-on-light/20 hover:bg-on-light/10' : 'border-on-dark/20 hover:bg-on-dark/10'
           }`
           const isTarget = dragOver === i && dragFrom !== null && dragFrom !== i
           return (
@@ -249,7 +249,7 @@ export default function Gerar() {
                 <span
                   aria-hidden
                   className={`pointer-events-none absolute inset-y-0 w-1 ${dragFrom! < i ? 'right-0' : 'left-0'} ${
-                    dark ? 'bg-black/60' : 'bg-white/80'
+                    dark ? 'bg-on-light/60' : 'bg-on-dark/80'
                   }`}
                 />
               )}
@@ -263,7 +263,7 @@ export default function Gerar() {
               <div className="flex gap-[13px]">
                 <button
                   type="button"
-                  className={`${btn} ${locked[i] ? (dark ? 'bg-black/15' : 'bg-white/20') : ''}`}
+                  className={`${btn} ${locked[i] ? (dark ? 'bg-on-light/15' : 'bg-on-dark/20') : ''}`}
                   onClick={(e) => {
                     toggleLock(i)
                     blurOnClick(e)

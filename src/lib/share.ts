@@ -67,17 +67,37 @@ const absolute = (path: string) => `${window.location.origin}${path}`
 export const montarPath = (colors: string[]) => `/montar?cores=${colors.map((c) => c.replace('#', '')).join('-')}`
 export const montarLink = (colors: string[]) => absolute(montarPath(colors))
 
+type GradientLike = Omit<GradientConfig, 'stops'> & { stops: Omit<GradientStop, 'id'>[] }
+
 /** /degrade?tipo=radial&ang=135&tr=oklab&forma=ellipse&origem=0,0&cores=FF006E.0-8338EC.50 */
-export function degradeLink({ type, angle, interp, shape, origin, stops }: GradientConfig): string {
+export function degradePath({ type, angle, interp, shape, origin, stops }: GradientLike): string {
   const params = new URLSearchParams({
     tipo: type,
     ang: String(angle),
     tr: interp,
     forma: shape,
     origem: `${origin.x},${origin.y}`,
-    cores: stops.map((s) => `${s.color.replace('#', '')}.${s.position}`).join('-'),
+    cores: [...stops]
+      .sort((a, b) => a.position - b.position)
+      .map((s) => `${s.color.replace('#', '')}.${s.position}`)
+      .join('-'),
   })
-  return absolute(`/degrade?${params}`)
+  return `/degrade?${params}`
+}
+
+export const degradeLink = (config: GradientLike) => absolute(degradePath(config))
+
+/** Degradê linear com as cores da paleta distribuídas por igual. */
+export function paletteToGradient(colors: string[]): GradientLike {
+  const list = colors.slice(0, 8)
+  return {
+    type: 'linear',
+    angle: 90,
+    interp: 'oklab',
+    shape: 'circle',
+    origin: { x: 50, y: 50 },
+    stops: list.map((color, i) => ({ color, position: Math.round((i / (list.length - 1)) * 100) })),
+  }
 }
 
 const TYPES: GradientType[] = ['linear', 'radial', 'conico']
@@ -89,7 +109,7 @@ const pct = (v: string | undefined) => {
 }
 
 /** Lê um degradê da URL; devolve null se o link estiver incompleto ou inválido. */
-export function parseDegradeParams(search: string): (Omit<GradientConfig, 'stops'> & { stops: Omit<GradientStop, 'id'>[] }) | null {
+export function parseDegradeParams(search: string): GradientLike | null {
   const q = new URLSearchParams(search)
   const stops = (q.get('cores') ?? '')
     .split('-')

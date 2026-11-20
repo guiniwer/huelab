@@ -18,6 +18,31 @@
   --color-panel: #f6f6f6;
   --color-segment: #d9d9d9;
   --color-code-key: #7ec546;
+
+  /* fixas: texto sobre as cores da paleta (não invertem no modo escuro) */
+  --color-on-light: #000000;
+  --color-on-dark: #ffffff;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Modo escuro: troca preto ↔ branco do tema, então bg-white, text-black, border-black/20 etc.
+ * se adaptam sozinhos. As cores da paleta usam on-light/on-dark, que não mudam.
+ */
+:root.dark {
+  color-scheme: dark;
+  --color-white: #17171c;
+  --color-black: #ededf0;
+  --color-ink: #ededf0;
+  --color-icon: #c9cbd4;
+  --color-brick: #d9a0a0;
+  --color-brick-soft: #5c3636;
+  --color-brick-strong: #8a5252;
+  --color-danger: #f07a7a;
+  --color-success: #6fd156;
+  --color-panel: #24242b;
+  --color-segment: #2e2e36;
 }
 
 html {
@@ -31,7 +56,7 @@ html {
 
 html,
 body {
-  background: #ffffff;
+  background: var(--color-white);
   color: var(--color-ink);
   font-family: var(--font-ui);
 }
@@ -53,8 +78,8 @@ body {
   width: 100%;
   height: 8px;
   border-radius: 20px;
-  background: linear-gradient(to right, #000 var(--fill, 50%), #fafafa var(--fill, 50%));
-  border: 1px solid rgba(0, 0, 0, 0.28);
+  background: linear-gradient(to right, var(--color-black) var(--fill, 50%), var(--color-panel) var(--fill, 50%));
+  border: 1px solid color-mix(in oklab, var(--color-black) 28%, transparent);
   box-shadow: 0 3px 4px rgba(0, 0, 0, 0.25);
   cursor: pointer;
 }
@@ -63,14 +88,14 @@ body {
   width: 15px;
   height: 14px;
   border-radius: 50%;
-  background: #000;
+  background: var(--color-black);
   border: none;
 }
 .hl-range::-moz-range-thumb {
   width: 15px;
   height: 14px;
   border-radius: 50%;
-  background: #000;
+  background: var(--color-black);
   border: none;
 }
 .hl-range:focus-visible {

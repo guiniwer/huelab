@@ -11,6 +11,13 @@
       rel="stylesheet"
     />
     <title>HueLab</title>
+    <script>
+      try {
+        var t = localStorage.getItem('huelab:tema')
+        var dark = t ? JSON.parse(t) === 'escuro' : matchMedia('(prefers-color-scheme: dark)').matches
+        if (dark) document.documentElement.classList.add('dark')
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

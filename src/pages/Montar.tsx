@@ -1,6 +1,8 @@
 import { useMemo, useState, type CSSProperties } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ContrastMap } from '../components/ContrastMap'
+import { ImageExtract } from '../components/ImageExtract'
+import { VisionFilters, VisionSelect } from '../components/Vision'
 import { Icon } from '../components/Icon'
 import { Menu } from '../components/Menu'
 import { NameDialog } from '../components/NameDialog'
@@ -15,7 +17,16 @@ import {
   shades,
   wcagLevel,
 } from '../lib/color'
-import { downloadBlob, exportPalette, montarLink, PALETTE_FORMATS, renderPalettePng } from '../lib/share'
+import { visionFilter, type Vision } from '../lib/colorblind'
+import {
+  degradePath,
+  downloadBlob,
+  exportPalette,
+  montarLink,
+  PALETTE_FORMATS,
+  paletteToGradient,
+  renderPalettePng,
+} from '../lib/share'
 import { useSavedPalettes } from '../lib/storage'
 
 const DEFAULT = ['#141A34', '#57C1BE', '#70FFE2', '#E8C468', '#F6F2EE']
@@ -77,6 +88,9 @@ export default function Montar() {
   const [draft, setDraft] = useState<{ base: string; value: string } | null>(null)
   const copy = useCopy()
   const toast = useToast()
+  const navigate = useNavigate()
+  const [extracting, setExtracting] = useState(false)
+  const [vision, setVision] = useState<Vision>('normal')
   const { save, nextName } = useSavedPalettes()
   const [saving, setSaving] = useState(false)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
@@ -133,6 +147,8 @@ export default function Montar() {
           () => toast('Não foi possível gerar o PNG'),
         ),
     },
+    'separator' as const,
+    { label: 'Abrir como degradê', hint: '→', onSelect: () => navigate(degradePath(paletteToGradient(colors))) },
   ]
 
   const white = contrastRatio(current, '#FFFFFF')
@@ -143,37 +159,49 @@ export default function Montar() {
   return (
     <main className="mx-auto flex max-w-[1440px] flex-col gap-12 px-4 pt-10 pb-20 sm:px-[53px] xl:flex-row xl:gap-[100px]">
       <div className="min-w-0 flex-1 xl:max-w-[900px]">
-        <div className="flex flex-wrap items-start gap-x-14 gap-y-4">
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
           <div>
             <h1 className="font-heading text-[32px] font-bold tracking-[0.1em]">Montar paleta</h1>
             <p className="font-body text-[13px] tracking-[0.1em]">Escolha uma cor e ajuste no painel. De 2 a 8 cores</p>
           </div>
-          <div className="flex gap-4 pt-[13px]">
+          <div className="flex gap-3 pt-[13px]">
+            <button
+              type="button"
+              onClick={() => setExtracting(true)}
+              title="Criar a paleta a partir das cores de uma foto"
+              className="h-[47px] w-[124px] rounded-[10px] border border-brick shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:bg-brick-soft/40"
+            >
+              Da imagem
+            </button>
             <Menu
               label="Exportar ▾"
               items={exportItems}
-              className="h-[47px] w-[140px] rounded-[10px] border border-brick shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:bg-brick-soft/40"
+              className="h-[47px] w-[124px] rounded-[10px] border border-brick shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:bg-brick-soft/40"
             />
             <button
               type="button"
               onClick={() => copy(montarLink(colors), 'Link copiado!')}
               title="Copiar um link que abre esta paleta"
-              className="h-[47px] w-[140px] rounded-[10px] border border-brick shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:bg-brick-soft/40"
+              className="h-[47px] w-[124px] rounded-[10px] border border-brick shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:bg-brick-soft/40"
             >
               Copiar link
             </button>
             <button
               type="button"
               onClick={() => setSaving(true)}
-              className="h-[47px] w-[140px] rounded-[10px] border border-brick bg-brick-strong shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:brightness-105"
+              className="h-[47px] w-[124px] rounded-[10px] border border-brick bg-brick-strong shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:brightness-105"
             >
               Salvar paleta
             </button>
           </div>
         </div>
 
+        <div className="mt-8">
+          <VisionSelect value={vision} onChange={setVision} />
+        </div>
+
         {/* Faixas da paleta */}
-        <div className="mt-[45px] flex h-[313px] overflow-hidden rounded-[20px]">
+        <div className="mt-4 flex h-[313px] overflow-hidden rounded-[20px]" style={{ filter: visionFilter(vision) }}>
           {colors.map((c, i) => {
             const dark = prefersDarkText(c)
             const active = i === selected
@@ -208,20 +236,20 @@ export default function Montar() {
                 title="Clique para editar · arraste para reordenar"
                 className={`relative flex min-w-0 cursor-grab flex-col items-center justify-between py-[38px] font-body text-[13px] font-medium tracking-[0.1em] transition-[flex,opacity] duration-300 active:cursor-grabbing ${
                   active ? 'flex-[1.37]' : 'flex-1'
-                } ${dark ? 'text-black' : 'text-white'} ${dragFrom === i ? 'opacity-40' : ''}`}
+                } ${dark ? 'text-on-light' : 'text-on-dark'} ${dragFrom === i ? 'opacity-40' : ''}`}
                 style={{ background: c }}
               >
                 {isTarget && (
                   <span
                     aria-hidden
                     className={`pointer-events-none absolute inset-y-0 w-1 ${dragFrom! < i ? 'right-0' : 'left-0'} ${
-                      dark ? 'bg-black/60' : 'bg-white/80'
+                      dark ? 'bg-on-light/60' : 'bg-on-dark/80'
                     }`}
                   />
                 )}
                 <span
                   className={`rounded-[20px] border px-5 py-[2px] text-[10px] font-normal ${
-                    dark ? 'border-black/50 text-black/60' : 'border-white/70 text-white/60'
+                    dark ? 'border-on-light/50 text-on-light/60' : 'border-on-dark/70 text-on-dark/60'
                   } ${active ? 'visible' : 'invisible'}`}
                 >
                   EDITANDO
@@ -242,7 +270,10 @@ export default function Montar() {
         </div>
 
         {/* Na prática */}
-        <section className="mt-[42px] rounded-[20px] border border-black/30 px-[25px] pt-[23px] pb-[25px] sm:px-[40px]">
+        <section
+          className="mt-[42px] rounded-[20px] border border-black/30 px-[25px] pt-[23px] pb-[25px] sm:px-[40px]"
+          style={{ filter: visionFilter(vision) }}
+        >
           <h2 className="font-heading text-[20px] font-bold tracking-[0.1em]">Na prática</h2>
           <div className="mt-4 flex flex-col gap-8 md:flex-row md:items-center">
             <div className="flex-1 rounded-[15px] px-7 py-[31px]" style={{ background: card.bg }}>
@@ -271,7 +302,7 @@ export default function Montar() {
                 <li
                   key={i}
                   className={`flex h-[38px] items-center rounded-l-[20px] border border-[#d9d9d9] px-[22px] font-body text-[13px] font-medium tracking-[0.1em] ${
-                    prefersDarkText(c) ? 'text-black' : 'text-white'
+                    prefersDarkText(c) ? 'text-on-light' : 'text-on-dark'
                   }`}
                   style={{ background: c }}
                 >
@@ -289,7 +320,7 @@ export default function Montar() {
       <aside className="w-full shrink-0 space-y-6 xl:mt-[22px] xl:w-[303px]" aria-label="Editar cor selecionada">
         <div
           className={`relative flex h-[120px] flex-col justify-end rounded-[10px] px-[15px] pb-4 ${
-            prefersDarkText(current) ? 'text-black' : 'text-white'
+            prefersDarkText(current) ? 'text-on-light' : 'text-on-dark'
           }`}
           style={{ background: current }}
         >
@@ -300,7 +331,7 @@ export default function Montar() {
             onClick={() => copy(current)}
             aria-label={`Copiar ${current}`}
             className={`absolute right-[14px] bottom-[17px] grid h-[38px] w-[42px] place-items-center rounded-[10px] border ${
-              prefersDarkText(current) ? 'border-black/20' : 'border-white/20'
+              prefersDarkText(current) ? 'border-on-light/20' : 'border-on-dark/20'
             }`}
           >
             <Icon name="copy" />
@@ -396,6 +427,16 @@ export default function Montar() {
         </button>
       </aside>
 
+      <VisionFilters />
+      <ImageExtract
+        open={extracting}
+        onClose={() => setExtracting(false)}
+        onUse={(list) => {
+          setColors(list.slice(0, MAX))
+          setSelected(0)
+          toast('Cores da imagem aplicadas')
+        }}
+      />
       <NameDialog
         open={saving}
         title="Salvar paleta"

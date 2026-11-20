@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { POPULAR_PALETTES } from '../data/palettes'
 import { buildGradient } from '../lib/gradient'
-import { montarPath } from '../lib/share'
+import { KEYS, makeBackup, mergeBackup, parseBackup } from '../lib/backup'
+import { downloadBlob } from '../lib/share'
+import { readStored, writeStored } from '../lib/storage'
+import { useToast } from './toast-context'
 import { useFavorites, useSavedGradients, useSavedPalettes, type SavedGradient } from '../lib/storage'
 import { Icon } from './Icon'
 
@@ -120,6 +123,37 @@ export function SavedDrawer({ open, onClose }: { open: boolean; onClose: () => v
     return () => document.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  const toast = useToast()
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const exportBackup = () => {
+    const data = makeBackup({ paletas: palettes, degrades: gradients, favoritos: favorites })
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    downloadBlob(blob, `huelab-backup-${new Date().toISOString().slice(0, 10)}.json`)
+    toast('Backup baixado')
+  }
+
+  const importBackup = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // permite escolher o mesmo arquivo de novo
+    if (!file) return
+    try {
+      const incoming = parseBackup(await file.text())
+      const current = {
+        paletas: readStored(KEYS.paletas, palettes),
+        degrades: readStored(KEYS.degrades, gradients),
+        favoritos: readStored(KEYS.favoritos, favorites),
+      }
+      const { data, added } = mergeBackup(current, incoming)
+      writeStored(KEYS.paletas, data.paletas)
+      writeStored(KEYS.degrades, data.degrades)
+      writeStored(KEYS.favoritos, data.favoritos)
+      toast(added ? `${added} ${added === 1 ? 'item importado' : 'itens importados'}` : 'Tudo do backup já estava aqui')
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Não foi possível importar')
+    }
+  }
+
   const go = (to: string, state?: unknown) => {
     navigate(to, { state })
     onClose()
@@ -137,7 +171,7 @@ export function SavedDrawer({ open, onClose }: { open: boolean; onClose: () => v
     <div className={`fixed inset-0 z-40 ${open ? '' : 'pointer-events-none'}`} inert={!open}>
       <div
         onClick={onClose}
-        className={`absolute inset-0 bg-black/25 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 bg-on-light/40 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
       />
       <div
         ref={panelRef}
@@ -189,7 +223,7 @@ export function SavedDrawer({ open, onClose }: { open: boolean; onClose: () => v
                     key={p.id}
                     name={p.name}
                     preview={<Strip colors={p.colors} />}
-                    onOpen={() => go(montarPath(p.colors))}
+                    onOpen={() => go(`/paleta/${p.id}`)}
                     onRemove={() => toggle(p.id)}
                     removeLabel={`Desfavoritar ${p.name}`}
                   />
@@ -207,7 +241,7 @@ export function SavedDrawer({ open, onClose }: { open: boolean; onClose: () => v
                     key={p.id}
                     name={p.name}
                     preview={<Strip colors={p.colors} />}
-                    onOpen={() => go(montarPath(p.colors))}
+                    onOpen={() => go(`/paleta/${p.id}`)}
                     onRemove={() => removePalette(p.id)}
                     onRename={(name) => renamePalette(p.id, name)}
                     removeLabel={`Excluir ${p.name}`}
@@ -241,6 +275,27 @@ export function SavedDrawer({ open, onClose }: { open: boolean; onClose: () => v
             ) : (
               empty('Use "Salvar degradê" no Degradê para guardar aqui.')
             ))}
+        </div>
+
+        <div className="border-t border-black/10 px-6 py-4">
+          <p className="text-[12px] text-black/50">Seus salvos ficam só neste navegador. Faça um backup para não perder.</p>
+          <div className="mt-2.5 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={exportBackup}
+              className="h-9 rounded-[8px] border border-black/20 text-sm transition hover:bg-black/5"
+            >
+              Exportar backup
+            </button>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="h-9 rounded-[8px] border border-black/20 text-sm transition hover:bg-black/5"
+            >
+              Importar
+            </button>
+          </div>
+          <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={importBackup} />
         </div>
       </div>
     </div>

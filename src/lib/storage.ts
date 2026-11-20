@@ -30,6 +30,10 @@ function write<T>(key: string, value: T) {
   listeners.get(key)?.forEach((fn) => fn())
 }
 
+/** Leitura/escrita direta (fora de componentes), ex.: importar um backup. */
+export const readStored = <T,>(key: string, initial: T) => read(key, initial)
+export const writeStored = <T,>(key: string, value: T) => write(key, value)
+
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
     if (!e.key || !listeners.has(e.key)) return

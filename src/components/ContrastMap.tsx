@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { contrastRatio, wcagLevel, type WcagLevel } from '../lib/color'
 
 const BADGE: Record<WcagLevel, string> = {
-  AAA: 'bg-[#1F7A35] text-white',
-  AA: 'bg-[#50B736] text-black',
-  'AA Grande': 'bg-[#E8C468] text-black',
+  AAA: 'bg-[#1F7A35] text-on-dark',
+  AA: 'bg-[#50B736] text-on-light',
+  'AA Grande': 'bg-[#E8C468] text-on-light',
   Reprovado: 'bg-black/10 text-black/50',
 }
 

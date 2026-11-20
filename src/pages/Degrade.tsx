@@ -496,7 +496,7 @@ export default function Degrade({ initial }: { initial?: Omit<SavedGradient, 'id
             Copiar
           </button>
         </div>
-        <pre className="mt-4 rounded-[10px] bg-black px-4 py-[18px] font-ui text-[15px] font-medium break-all whitespace-pre-wrap text-white">
+        <pre className="mt-4 rounded-[10px] bg-on-light px-4 py-[18px] font-ui text-[15px] font-medium break-all whitespace-pre-wrap text-on-dark">
           {format === 'css' ? (
             <>
               <span className="text-code-key">background</span>: {gradient};

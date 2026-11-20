@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import iconeUrl from '../assets/huelab-icone.png'
 import { useSavedCount } from '../lib/storage'
+import { useTheme } from '../lib/theme'
 import { Icon, type IconName } from './Icon'
 import { SavedDrawer } from './SavedDrawer'
 
@@ -16,6 +17,7 @@ const TABS: {
   gradient: string
   border: string
   text: string
+  textDark: string
   hover: string
 }[] = [
   {
@@ -25,6 +27,7 @@ const TABS: {
     gradient: 'linear-gradient(90deg, rgba(240,128,128,0.7), rgba(181,54,54,0.7))',
     border: 'rgba(172,74,74,0.35)',
     text: '#480F0F',
+    textDark: '#F7C4C4',
     hover: 'rgba(240,128,128,0.14)',
   },
   {
@@ -34,6 +37,7 @@ const TABS: {
     gradient: 'linear-gradient(90deg, rgba(128,186,240,0.7), rgba(54,94,181,0.7))',
     border: 'rgba(74,134,172,0.35)',
     text: '#112550',
+    textDark: '#C4D6F7',
     hover: 'rgba(128,186,240,0.16)',
   },
   {
@@ -43,6 +47,7 @@ const TABS: {
     gradient: 'linear-gradient(90deg, rgba(147,240,128,0.7), rgba(54,181,156,0.7))',
     border: 'rgba(79,172,74,0.35)',
     text: '#125447',
+    textDark: '#B5EBD9',
     hover: 'rgba(147,240,128,0.18)',
   },
   {
@@ -52,6 +57,7 @@ const TABS: {
     gradient: 'linear-gradient(90deg, rgba(240,214,128,0.7), rgba(181,133,54,0.7))',
     border: 'rgba(172,140,74,0.35)',
     text: '#543C12',
+    textDark: '#F2DDA6',
     hover: 'rgba(240,214,128,0.2)',
   },
 ]
@@ -87,6 +93,7 @@ export function Navbar() {
   const navigate = useNavigate()
   const current = activeIndex(pathname)
   const savedCount = useSavedCount()
+  const { theme, toggle: toggleTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
   const { scrolled, hidden } = useScrollState()
@@ -139,7 +146,7 @@ export function Navbar() {
         } ${isHidden ? '-translate-y-full' : 'translate-y-0'}`}
       >
         <Link to="/" aria-label="HueLab — início" className="shrink-0">
-          <img src={iconeUrl} alt="HueLab" className="size-[52px] object-cover" />
+          <img src={iconeUrl} alt="HueLab" className="size-[52px] object-cover dark:[filter:invert(1)_hue-rotate(180deg)]" />
         </Link>
 
         <nav
@@ -176,7 +183,7 @@ export function Navbar() {
               title={`${tab.label[0]}${tab.label.slice(1).toLowerCase()} · atalho ${i + 1}`}
               aria-keyshortcuts={String(i + 1)}
               className="group relative flex h-10 min-w-0 flex-1 items-center justify-center rounded-[15px] px-2 font-ui text-base font-semibold tracking-[0.02em] transition-colors sm:px-3 lg:text-[20px]"
-              style={{ color: tab.text }}
+              style={{ color: theme === 'escuro' ? tab.textDark : tab.text }}
             >
               {/* fundo leve só no hover das abas inativas */}
               {i !== current && (
@@ -200,15 +207,24 @@ export function Navbar() {
 
         <button
           type="button"
+          onClick={toggleTheme}
+          aria-label={theme === 'escuro' ? 'Usar tema claro' : 'Usar tema escuro'}
+          title={theme === 'escuro' ? 'Tema claro' : 'Tema escuro'}
+          className="grid size-[52px] shrink-0 place-items-center rounded-[15px] border-[1.5px] border-black/18 bg-white text-[22px] shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:bg-panel"
+        >
+          {theme === 'escuro' ? '☀' : '☾'}
+        </button>
+        <button
+          type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label={`Salvos (${savedCount})`}
           title="Salvos"
-          className="relative flex h-[52px] shrink-0 items-center gap-2 rounded-[15px] border-[1.5px] border-black/18 bg-white px-3 font-ui font-semibold text-[#5A1A1A] shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:bg-[#fdf1f1] lg:px-4"
+          className="relative flex h-[52px] shrink-0 items-center gap-2 rounded-[15px] border-[1.5px] border-black/18 bg-white px-3 font-ui font-semibold text-[#5A1A1A] shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:bg-[#fdf1f1] lg:px-4 dark:text-[#F7C4C4] dark:hover:bg-[#2a1d1d]"
         >
           <Icon name={savedCount ? 'heartFill' : 'heart'} className="text-[#A62222]" />
           <span className="hidden lg:inline">Salvos</span>
           {savedCount > 0 && (
-            <span className="absolute -top-2 -right-2 grid h-5 min-w-5 place-items-center rounded-full bg-[#A62222] px-1 text-[11px] font-bold text-white lg:static lg:h-auto lg:min-w-0 lg:bg-transparent lg:px-0 lg:text-[15px] lg:font-semibold lg:text-[#5A1A1A]/60">
+            <span className="absolute -top-2 -right-2 grid h-5 min-w-5 place-items-center rounded-full bg-[#A62222] px-1 text-[11px] font-bold text-on-dark lg:static lg:h-auto lg:min-w-0 lg:bg-transparent lg:px-0 lg:text-[15px] lg:font-semibold lg:text-[#5A1A1A]/60 dark:lg:text-[#F7C4C4]/60">
               {savedCount}
             </span>
           )}

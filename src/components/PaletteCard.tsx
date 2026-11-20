@@ -8,6 +8,8 @@ type Props = {
   name: string
   colors: string[]
   accent: string
+  /** Abre a página da paleta ao clicar no nome. */
+  href?: string
   favorite?: boolean
   onToggleFavorite?: () => void
 }
@@ -16,7 +18,7 @@ type Props = {
  * Card de paleta: faixas verticais que expandem no hover (clique copia o hex)
  * e rodapé com nome, olho (abre no Montar) e favorito.
  */
-export function PaletteCard({ name, colors, accent, favorite, onToggleFavorite }: Props) {
+export function PaletteCard({ name, colors, accent, href, favorite, onToggleFavorite }: Props) {
   const copy = useCopy()
   const montarHref = montarPath(colors)
 
@@ -31,7 +33,7 @@ export function PaletteCard({ name, colors, accent, favorite, onToggleFavorite }
             aria-label={`Copiar ${c}`}
             title={`Copiar ${c}`}
             className={`group/cor relative flex min-w-0 flex-1 flex-col items-center justify-end gap-1 pb-3 transition-[flex-grow] duration-300 ease-out hover:flex-[2.6] focus-visible:flex-[2.6] focus-visible:outline-none ${
-              prefersDarkText(c) ? 'text-black' : 'text-white'
+              prefersDarkText(c) ? 'text-on-light' : 'text-on-dark'
             }`}
             style={{ background: c }}
           >
@@ -44,9 +46,20 @@ export function PaletteCard({ name, colors, accent, favorite, onToggleFavorite }
       </div>
 
       <div className="flex h-[44px] items-center gap-1 pr-1 pl-1">
-        <span className="min-w-0 flex-1 truncate font-mono text-[16px] font-medium" style={{ color: accent }}>
-          {name}
-        </span>
+        {href ? (
+          <Link
+            to={href}
+            title={`Ver ${name}`}
+            className="min-w-0 flex-1 truncate font-mono text-[16px] font-medium underline-offset-4 hover:underline"
+            style={{ color: accent }}
+          >
+            {name}
+          </Link>
+        ) : (
+          <span className="min-w-0 flex-1 truncate font-mono text-[16px] font-medium" style={{ color: accent }}>
+            {name}
+          </span>
+        )}
         <Link
           to={montarHref}
           aria-label={`Abrir ${name} no Montar`}

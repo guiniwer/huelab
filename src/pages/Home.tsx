@@ -59,14 +59,14 @@ export default function Home() {
           <div className="mt-8 flex flex-wrap gap-6">
             <Link
               to="/montar"
-              className="rounded-[15px] border border-black px-6 py-[18px] font-heading text-lg font-semibold tracking-[0.1em] shadow-[0_7px_4px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 sm:text-[24px]"
+              className="rounded-[15px] border border-on-light px-6 py-[18px] text-on-light font-heading text-lg font-semibold tracking-[0.1em] shadow-[0_7px_4px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 sm:text-[24px]"
               style={{ backgroundImage: 'linear-gradient(131.7deg, rgb(229,189,66) 9%, rgb(245,106,227) 138.8%)' }}
             >
               Criar minha paleta
             </Link>
             <a
               href="#populares"
-              className="rounded-[15px] border border-black px-9 py-[18px] font-heading text-lg font-semibold tracking-[0.1em] shadow-[0_7px_4px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 sm:text-[24px]"
+              className="rounded-[15px] border border-on-light px-9 py-[18px] text-on-light font-heading text-lg font-semibold tracking-[0.1em] shadow-[0_7px_4px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 sm:text-[24px]"
               style={{ backgroundImage: 'linear-gradient(116.9deg, rgb(75,181,185) 9%, rgb(106,146,245) 138.8%)' }}
             >
               Explore
@@ -130,6 +130,7 @@ export default function Home() {
                 name={p.name}
                 colors={p.colors}
                 accent={p.accent}
+                href={`/paleta/${p.id}`}
                 favorite={isFavorite(p.id)}
                 onToggleFavorite={() => toggle(p.id)}
               />

@@ -165,14 +165,14 @@ export function mixHex(a: string, b: string, t: number): string {
 }
 
 // --- OKLab / OKLCH (Björn Ottosson), usados para reproduzir "in oklab/oklch" no PNG ---
-type Lab = { L: number; a: number; b: number }
-const toLinear = (v: number) => {
+export type Lab = { L: number; a: number; b: number }
+export const toLinear = (v: number) => {
   const c = v / 255
   return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
 }
-const fromLinear = (v: number) => 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055)
+export const fromLinear = (v: number) => 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055)
 
-function hexToOklab(hex: string): Lab {
+export function hexToOklab(hex: string): Lab {
   const { r, g, b } = hexToRgb(hex)
   const [lr, lg, lb] = [toLinear(r), toLinear(g), toLinear(b)]
   const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb)
@@ -185,7 +185,7 @@ function hexToOklab(hex: string): Lab {
   }
 }
 
-function oklabToHex({ L, a, b }: Lab): string {
+export function oklabToHex({ L, a, b }: Lab): string {
   const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
   const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
   const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3

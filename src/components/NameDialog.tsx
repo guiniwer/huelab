@@ -35,7 +35,7 @@ function DialogBody({ title, defaultName, preview, onSave, onClose }: Omit<Props
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="absolute inset-0 bg-on-light/40" onClick={onClose} />
       <form
         role="dialog"
         aria-modal="true"

@@ -20,7 +20,9 @@ function DialogBody({ title, defaultName, preview, onSave, onClose }: Omit<Props
   const [name, setName] = useState(defaultName)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => inputRef.current?.select(), [])
+  useEffect(() => {
+    inputRef.current?.select()
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()

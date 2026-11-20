@@ -1,33 +1,38 @@
-import { useEffect } from 'react'
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
-import { Navbar } from './components/Navbar'
-import { ToastProvider } from './components/Toast'
-import Degrade from './pages/Degrade'
-import Gerar from './pages/Gerar'
-import Home from './pages/Home'
-import Montar from './pages/Montar'
-import Paleta from './pages/Paleta'
-import { parseDegradeParams } from './lib/share'
-import type { SavedGradient } from './lib/storage'
+import { useEffect } from "react";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Navbar } from "./components/Navbar";
+import { ToastProvider } from "./components/Toast";
+import Degrade from "./pages/Degrade";
+import Gerar from "./pages/Gerar";
+import Home from "./pages/Home";
+import Montar from "./pages/Montar";
+import Paleta from "./pages/Paleta";
+import { parseDegradeParams } from "./lib/share";
+import type { SavedGradient } from "./lib/storage";
 
 /** Remonta o Montar quando a URL muda (ex.: abrir outra paleta em /montar?cores=...). */
 function ScrollToTop() {
-  const { pathname } = useLocation()
-  useEffect(() => window.scrollTo({ top: 0, behavior: 'instant' }), [pathname])
-  return null
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [pathname]);
+  return null;
 }
 
 function MontarRoute() {
-  const { search } = useLocation()
-  return <Montar key={search} />
+  const { search } = useLocation();
+  return <Montar key={search} />;
 }
 
 /** Abre um degradê vindo do painel Salvos (state) ou de um link compartilhado (?cores=...). */
 function DegradeRoute() {
-  const location = useLocation()
+  const location = useLocation();
   const initial =
-    (location.state as { gradient?: SavedGradient } | null)?.gradient ?? parseDegradeParams(location.search) ?? undefined
-  return <Degrade key={initial ? location.key : 'degrade'} initial={initial} />
+    (location.state as { gradient?: SavedGradient } | null)?.gradient ??
+    parseDegradeParams(location.search) ??
+    undefined;
+  return <Degrade key={initial ? location.key : "degrade"} initial={initial} />;
 }
 
 export default function App() {
@@ -36,15 +41,17 @@ export default function App() {
       <ToastProvider>
         <ScrollToTop />
         <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/gerar" element={<Gerar />} />
-          <Route path="/montar" element={<MontarRoute />} />
-          <Route path="/degrade" element={<DegradeRoute />} />
-          <Route path="/paleta/:id" element={<Paleta />} />
-          <Route path="*" element={<Home />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/gerar" element={<Gerar />} />
+            <Route path="/montar" element={<MontarRoute />} />
+            <Route path="/degrade" element={<DegradeRoute />} />
+            <Route path="/paleta/:id" element={<Paleta />} />
+            <Route path="*" element={<Home />} />
+          </Routes>
+        </ErrorBoundary>
       </ToastProvider>
     </BrowserRouter>
-  )
+  );
 }

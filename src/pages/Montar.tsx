@@ -1,6 +1,9 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { ContrastMap } from '../components/ContrastMap'
 import { Icon } from '../components/Icon'
+import { Menu } from '../components/Menu'
+import { NameDialog } from '../components/NameDialog'
 import { useCopy, useToast } from '../components/toast-context'
 import {
   colorName,
@@ -12,6 +15,7 @@ import {
   shades,
   wcagLevel,
 } from '../lib/color'
+import { downloadBlob, exportPalette, montarLink, PALETTE_FORMATS, renderPalettePng } from '../lib/share'
 import { useSavedPalettes } from '../lib/storage'
 
 const DEFAULT = ['#141A34', '#57C1BE', '#70FFE2', '#E8C468', '#F6F2EE']
@@ -73,7 +77,10 @@ export default function Montar() {
   const [draft, setDraft] = useState<{ base: string; value: string } | null>(null)
   const copy = useCopy()
   const toast = useToast()
-  const { save } = useSavedPalettes()
+  const { save, nextName } = useSavedPalettes()
+  const [saving, setSaving] = useState(false)
+  const [dragFrom, setDragFrom] = useState<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
 
   const current = colors[selected]
   const hsl = useMemo(() => hexToHsl(current), [current])
@@ -97,18 +104,36 @@ export default function Montar() {
     setSelected((s) => Math.max(0, s - 1))
   }
 
-  const exportCss = () => {
-    const css = `:root {\n${colors.map((c, i) => `  --cor-${i + 1}: ${c};`).join('\n')}\n}`
-    navigator.clipboard.writeText(css).then(
-      () => toast('CSS copiado!'),
-      () => toast('Não foi possível copiar'),
-    )
+  /** Move uma cor de posição; a seleção acompanha a cor que estava sendo editada. */
+  const move = (from: number, to: number) => {
+    if (from === to) return
+    const editing = colors[selected]
+    const next = [...colors]
+    next.splice(to, 0, next.splice(from, 1)[0])
+    setColors(next)
+    setSelected(next.indexOf(editing))
   }
 
-  const onSave = () => {
-    save(colors)
-    toast('Paleta salva! Veja em Explorar.')
-  }
+  const exportItems = [
+    ...PALETTE_FORMATS.map((f) => ({
+      label: f.label,
+      hint: 'copiar',
+      onSelect: () => copy(exportPalette(colors, f.id), `${f.label} copiado!`),
+    })),
+    'separator' as const,
+    {
+      label: 'Imagem PNG',
+      hint: 'baixar',
+      onSelect: () =>
+        renderPalettePng(colors).then(
+          (blob) => {
+            downloadBlob(blob, 'huelab-paleta.png')
+            toast('PNG baixado')
+          },
+          () => toast('Não foi possível gerar o PNG'),
+        ),
+    },
+  ]
 
   const white = contrastRatio(current, '#FFFFFF')
   const black = contrastRatio(current, '#000000')
@@ -124,16 +149,22 @@ export default function Montar() {
             <p className="font-body text-[13px] tracking-[0.1em]">Escolha uma cor e ajuste no painel. De 2 a 8 cores</p>
           </div>
           <div className="flex gap-4 pt-[13px]">
+            <Menu
+              label="Exportar ▾"
+              items={exportItems}
+              className="h-[47px] w-[140px] rounded-[10px] border border-brick shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:bg-brick-soft/40"
+            />
             <button
               type="button"
-              onClick={exportCss}
+              onClick={() => copy(montarLink(colors), 'Link copiado!')}
+              title="Copiar um link que abre esta paleta"
               className="h-[47px] w-[140px] rounded-[10px] border border-brick shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:bg-brick-soft/40"
             >
-              Exportar CSS
+              Copiar link
             </button>
             <button
               type="button"
-              onClick={onSave}
+              onClick={() => setSaving(true)}
               className="h-[47px] w-[140px] rounded-[10px] border border-brick bg-brick-strong shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:brightness-105"
             >
               Salvar paleta
@@ -146,18 +177,48 @@ export default function Montar() {
           {colors.map((c, i) => {
             const dark = prefersDarkText(c)
             const active = i === selected
+            const isTarget = dragOver === i && dragFrom !== null && dragFrom !== i
             return (
               <button
                 key={i}
                 type="button"
+                draggable
+                onDragStart={(e) => {
+                  setDragFrom(i)
+                  e.dataTransfer.effectAllowed = 'move'
+                  e.dataTransfer.setData('text/plain', c)
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setDragOver(i)
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (dragFrom !== null) move(dragFrom, i)
+                  setDragFrom(null)
+                  setDragOver(null)
+                }}
+                onDragEnd={() => {
+                  setDragFrom(null)
+                  setDragOver(null)
+                }}
                 onClick={() => setSelected(i)}
                 aria-pressed={active}
                 aria-label={`Editar ${c}`}
-                className={`relative flex min-w-0 flex-col items-center justify-between py-[38px] font-body text-[13px] font-medium tracking-[0.1em] transition-[flex] duration-300 ${
+                title="Clique para editar · arraste para reordenar"
+                className={`relative flex min-w-0 cursor-grab flex-col items-center justify-between py-[38px] font-body text-[13px] font-medium tracking-[0.1em] transition-[flex,opacity] duration-300 active:cursor-grabbing ${
                   active ? 'flex-[1.37]' : 'flex-1'
-                } ${dark ? 'text-black' : 'text-white'}`}
+                } ${dark ? 'text-black' : 'text-white'} ${dragFrom === i ? 'opacity-40' : ''}`}
                 style={{ background: c }}
               >
+                {isTarget && (
+                  <span
+                    aria-hidden
+                    className={`pointer-events-none absolute inset-y-0 w-1 ${dragFrom! < i ? 'right-0' : 'left-0'} ${
+                      dark ? 'bg-black/60' : 'bg-white/80'
+                    }`}
+                  />
+                )}
                 <span
                   className={`rounded-[20px] border px-5 py-[2px] text-[10px] font-normal ${
                     dark ? 'border-black/50 text-black/60' : 'border-white/70 text-white/60'
@@ -220,6 +281,8 @@ export default function Montar() {
             </ul>
           </div>
         </section>
+
+        <ContrastMap colors={colors} />
       </div>
 
       {/* Painel de edição */}
@@ -332,6 +395,24 @@ export default function Montar() {
           Remover esta cor
         </button>
       </aside>
+
+      <NameDialog
+        open={saving}
+        title="Salvar paleta"
+        defaultName={nextName}
+        preview={
+          <span className="flex h-12 overflow-hidden rounded-[10px]">
+            {colors.map((c, i) => (
+              <span key={i} className="flex-1" style={{ background: c }} />
+            ))}
+          </span>
+        }
+        onSave={(name) => {
+          save(colors, name)
+          toast(`"${name}" salva no ♡ Salvos`)
+        }}
+        onClose={() => setSaving(false)}
+      />
     </main>
   )
 }

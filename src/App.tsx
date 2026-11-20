@@ -5,6 +5,7 @@ import Degrade from './pages/Degrade'
 import Gerar from './pages/Gerar'
 import Home from './pages/Home'
 import Montar from './pages/Montar'
+import { parseDegradeParams } from './lib/share'
 import type { SavedGradient } from './lib/storage'
 
 /** Remonta o Montar quando a URL muda (ex.: abrir outra paleta em /montar?cores=...). */
@@ -13,10 +14,11 @@ function MontarRoute() {
   return <Montar key={search} />
 }
 
-/** Abre um degradê salvo (vindo do painel Salvos) remontando a tela com ele. */
+/** Abre um degradê vindo do painel Salvos (state) ou de um link compartilhado (?cores=...). */
 function DegradeRoute() {
   const location = useLocation()
-  const initial = (location.state as { gradient?: SavedGradient } | null)?.gradient
+  const initial =
+    (location.state as { gradient?: SavedGradient } | null)?.gradient ?? parseDegradeParams(location.search) ?? undefined
   return <Degrade key={initial ? location.key : 'degrade'} initial={initial} />
 }
 

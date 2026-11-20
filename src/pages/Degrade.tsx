@@ -3,6 +3,7 @@ import { GradientInPractice } from '../components/degrade/GradientInPractice'
 import { OriginPicker } from '../components/degrade/OriginPicker'
 import { PalettePicker } from '../components/degrade/PalettePicker'
 import { Icon } from '../components/Icon'
+import { NameDialog } from '../components/NameDialog'
 import { useCopy, useToast } from '../components/toast-context'
 import { GRADIENT_PRESETS, type GradientPreset } from '../data/palettes'
 import { generatePalette, mixHex, normalizeHex, type ColorSpace } from '../lib/color'
@@ -17,6 +18,7 @@ import {
   type Origin,
   type RadialShape,
 } from '../lib/gradient'
+import { degradeLink } from '../lib/share'
 import { useSavedGradients, type SavedGradient } from '../lib/storage'
 
 const TYPES: { id: GradientType; label: string }[] = [
@@ -101,7 +103,7 @@ function Segmented<T extends string>({
   )
 }
 
-export default function Degrade({ initial }: { initial?: SavedGradient }) {
+export default function Degrade({ initial }: { initial?: Omit<SavedGradient, 'id' | 'name'> }) {
   const [type, setType] = useState<GradientType>(initial?.type ?? 'linear')
   const [angle, setAngle] = useState(initial?.angle ?? GRADIENT_PRESETS[0].angle)
   const [interp, setInterp] = useState<ColorSpace>(initial?.interp ?? 'oklab')
@@ -114,7 +116,8 @@ export default function Degrade({ initial }: { initial?: SavedGradient }) {
   const barRef = useRef<HTMLDivElement>(null)
   const copy = useCopy()
   const toast = useToast()
-  const { gradients: saved, save, remove } = useSavedGradients()
+  const { gradients: saved, save, remove, nextName } = useSavedGradients()
+  const [saving, setSaving] = useState(false)
 
   const config: GradientConfig = { type, angle, interp, shape, origin, stops }
   const gradient = useMemo(
@@ -221,10 +224,6 @@ export default function Degrade({ initial }: { initial?: SavedGradient }) {
     }
   }
 
-  const onSave = () => {
-    save(config)
-    toast('Degradê salvo em "Prontos para usar"')
-  }
 
   const hasOrigin = type !== 'linear'
   const hasAngle = type !== 'radial'
@@ -507,7 +506,7 @@ export default function Degrade({ initial }: { initial?: SavedGradient }) {
           )}
         </pre>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-3 gap-2.5">
           <button
             type="button"
             onClick={downloadPng}
@@ -517,13 +516,33 @@ export default function Degrade({ initial }: { initial?: SavedGradient }) {
           </button>
           <button
             type="button"
-            onClick={onSave}
+            onClick={() => copy(degradeLink(config), 'Link copiado!')}
+            title="Copiar um link que abre este degradê"
+            className="h-[43px] rounded-[10px] border border-black text-[14px] font-medium transition hover:bg-black/5"
+          >
+            Copiar link
+          </button>
+          <button
+            type="button"
+            onClick={() => setSaving(true)}
             className="h-[43px] rounded-[10px] border border-brick bg-brick-strong text-[14px] font-medium shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition hover:brightness-105"
           >
-            Salvar degradê
+            Salvar
           </button>
         </div>
       </aside>
+
+      <NameDialog
+        open={saving}
+        title="Salvar degradê"
+        defaultName={nextName}
+        preview={<span className="block h-16 rounded-[10px]" style={{ background: gradient }} />}
+        onSave={(name) => {
+          save(config, name)
+          toast(`"${name}" salvo em "Prontos para usar"`)
+        }}
+        onClose={() => setSaving(false)}
+      />
     </main>
   )
 }

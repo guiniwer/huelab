@@ -1,7 +1,27 @@
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PaletteCard } from '../components/PaletteCard'
 import { HERO_PALETTES, POPULAR_PALETTES } from '../data/palettes'
-import { useFavorites, useSavedPalettes } from '../lib/storage'
+import { paletteFamilies, type ColorFamily } from '../lib/color'
+import { useFavorites } from '../lib/storage'
+
+const FILTERS: { id: ColorFamily; label: string; swatch: string }[] = [
+  { id: 'vermelho', label: 'Vermelho', swatch: '#E5383B' },
+  { id: 'laranja', label: 'Laranja', swatch: '#F4A261' },
+  { id: 'amarelo', label: 'Amarelo', swatch: '#F7D560' },
+  { id: 'verde', label: 'Verde', swatch: '#52B788' },
+  { id: 'azul', label: 'Azul', swatch: '#3A86FF' },
+  { id: 'roxo', label: 'Roxo', swatch: '#8338EC' },
+  { id: 'rosa', label: 'Rosa', swatch: '#FF8FAB' },
+  { id: 'pastel', label: 'Pastel', swatch: 'linear-gradient(135deg, #FFC8DD, #BDE0FE)' },
+  { id: 'escuro', label: 'Escuro', swatch: '#1B1B2F' },
+  { id: 'neutro', label: 'Neutro', swatch: '#ADB5BD' },
+]
+
+/** Normaliza para busca sem acento ("acai" acha "Açaí"). */
+const plain = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
+const FAMILIES = new Map(POPULAR_PALETTES.map((p) => [p.id, paletteFamilies(p.colors)]))
 
 function HeroPalette({ colors }: { colors: string[] }) {
   return (
@@ -15,7 +35,16 @@ function HeroPalette({ colors }: { colors: string[] }) {
 
 export default function Home() {
   const { isFavorite, toggle } = useFavorites()
-  const { palettes: saved, remove } = useSavedPalettes()
+  const [query, setQuery] = useState('')
+  const [family, setFamily] = useState<ColorFamily | null>(null)
+
+  const visible = useMemo(
+    () =>
+      POPULAR_PALETTES.filter(
+        (p) => plain(p.name).includes(plain(query.trim())) && (!family || FAMILIES.get(p.id)!.has(family)),
+      ),
+    [query, family],
+  )
 
   return (
     <main className="mx-auto max-w-[1440px] overflow-x-clip px-4 pb-20 sm:px-[100px]">
@@ -58,41 +87,70 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="populares" className="mt-24 scroll-mt-8">
-        <h2 className="font-heading text-[32px] font-semibold tracking-[0.1em]">Populares</h2>
-        <div className="mt-10 grid grid-cols-2 justify-items-center gap-x-6 gap-y-10 md:grid-cols-3 xl:grid-cols-5">
-          {POPULAR_PALETTES.map((p) => (
-            <PaletteCard
-              key={p.id}
-              name={p.name}
-              colors={p.colors}
-              accent={p.accent}
-              favorite={isFavorite(p.id)}
-              onToggleFavorite={() => toggle(p.id)}
+      <section id="populares" className="mt-24 scroll-mt-28">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h2 className="font-heading text-[32px] font-semibold tracking-[0.1em]">Populares</h2>
+          <label className="relative">
+            <span className="sr-only">Buscar paleta</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar por nome…"
+              className="h-10 w-[260px] rounded-[10px] border border-black/20 px-4 text-[15px] outline-none transition focus:border-black/50"
             />
-          ))}
+          </label>
         </div>
-      </section>
 
-      {saved.length > 0 && (
-        <section className="mt-20">
-          <h2 className="font-heading text-[32px] font-semibold tracking-[0.1em]">Minhas paletas</h2>
+        <div role="group" aria-label="Filtrar por cor" className="mt-5 flex flex-wrap gap-2">
+          {FILTERS.map((f) => {
+            const active = family === f.id
+            return (
+              <button
+                key={f.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setFamily(active ? null : f.id)}
+                className={`flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm transition ${
+                  active ? 'border-black bg-black text-white' : 'border-black/15 hover:border-black/40'
+                }`}
+              >
+                <span className="size-3.5 rounded-full border border-black/10" style={{ background: f.swatch }} />
+                {f.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {visible.length > 0 ? (
           <div className="mt-10 grid grid-cols-2 justify-items-center gap-x-6 gap-y-10 md:grid-cols-3 xl:grid-cols-5">
-            {saved.map((p) => (
-              <div key={p.id} className="flex flex-col items-center gap-2">
-                <PaletteCard name={p.name} colors={p.colors} accent={p.colors[Math.floor(p.colors.length / 2)]} />
-                <button
-                  type="button"
-                  onClick={() => remove(p.id)}
-                  className="text-sm text-danger hover:underline"
-                >
-                  Excluir
-                </button>
-              </div>
+            {visible.map((p) => (
+              <PaletteCard
+                key={p.id}
+                name={p.name}
+                colors={p.colors}
+                accent={p.accent}
+                favorite={isFavorite(p.id)}
+                onToggleFavorite={() => toggle(p.id)}
+              />
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <p className="mt-14 text-center text-black/50">
+            Nenhuma paleta encontrada.{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('')
+                setFamily(null)
+              }}
+              className="underline underline-offset-4 hover:text-black"
+            >
+              Limpar filtros
+            </button>
+          </p>
+        )}
+      </section>
     </main>
   )
 }

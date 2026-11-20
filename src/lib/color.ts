@@ -118,6 +118,41 @@ export function colorName(hex: string): string {
   return base
 }
 
+export type ColorFamily =
+  | 'vermelho'
+  | 'laranja'
+  | 'amarelo'
+  | 'verde'
+  | 'azul'
+  | 'roxo'
+  | 'rosa'
+  | 'neutro'
+  | 'pastel'
+  | 'escuro'
+
+/** Família de matiz de uma cor (ou "neutro" se quase sem saturação). */
+export function hueFamily(hex: string): ColorFamily {
+  const { h, s, l } = hexToHsl(hex)
+  if (s < 15 || l < 7 || l > 96) return 'neutro'
+  if (h < 12 || h >= 345) return 'vermelho'
+  if (h < 42) return l < 40 ? 'vermelho' : 'laranja' // laranja escuro lê como marrom/vermelho
+  if (h < 68) return 'amarelo'
+  if (h < 170) return 'verde'
+  if (h < 255) return 'azul'
+  if (h < 290) return 'roxo'
+  return 'rosa'
+}
+
+/** Famílias que descrevem uma paleta (para o filtro de Explorar). */
+export function paletteFamilies(colors: string[]): Set<ColorFamily> {
+  const out = new Set<ColorFamily>(colors.map(hueFamily))
+  const hsl = colors.map(hexToHsl)
+  if (hsl.filter((c) => c.l > 78 && c.s > 25).length >= 3) out.add('pastel')
+  if (hsl.filter((c) => c.l < 30).length >= 3) out.add('escuro')
+  if (hsl.filter((c) => c.s < 15).length < 2) out.delete('neutro') // um cinza só não faz a paleta neutra
+  return out
+}
+
 /** Mistura linear (sRGB) entre duas cores; t de 0 a 1. */
 export function mixHex(a: string, b: string, t: number): string {
   const ca = hexToRgb(a)

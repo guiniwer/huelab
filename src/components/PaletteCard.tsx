@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { prefersDarkText } from '../lib/color'
+import { montarPath } from '../lib/share'
 import { Icon } from './Icon'
 import { useCopy } from './toast-context'
 
@@ -17,7 +18,7 @@ type Props = {
  */
 export function PaletteCard({ name, colors, accent, favorite, onToggleFavorite }: Props) {
   const copy = useCopy()
-  const montarHref = `/montar?cores=${colors.map((c) => c.replace('#', '')).join('-')}`
+  const montarHref = montarPath(colors)
 
   return (
     <article className="w-full max-w-[260px]">

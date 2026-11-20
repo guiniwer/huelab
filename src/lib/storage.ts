@@ -78,7 +78,15 @@ export function useSavedPalettes() {
     [setPalettes],
   )
 
-  return { palettes, save, remove }
+  const rename = useCallback(
+    (id: string, name: string) => setPalettes((list) => list.map((p) => (p.id === id ? { ...p, name } : p))),
+    [setPalettes],
+  )
+
+  /** Nome sugerido para a próxima paleta salva. */
+  const nextName = `Minha paleta ${palettes.length + 1}`
+
+  return { palettes, save, remove, rename, nextName }
 }
 
 export type SavedGradient = Omit<GradientConfig, 'stops'> & {
@@ -91,13 +99,13 @@ export function useSavedGradients() {
   const [gradients, setGradients] = useLocalStorage<SavedGradient[]>('huelab:degrades', [])
 
   const save = useCallback(
-    ({ stops, ...config }: GradientConfig) =>
+    ({ stops, ...config }: GradientConfig, name?: string) =>
       setGradients((list) => [
         ...list,
         {
           ...config,
           id: crypto.randomUUID(),
-          name: `Meu degradê ${list.length + 1}`,
+          name: name ?? `Meu degradê ${list.length + 1}`,
           stops: stops.map(({ color, position }) => ({ color, position })),
         },
       ]),
@@ -109,7 +117,14 @@ export function useSavedGradients() {
     [setGradients],
   )
 
-  return { gradients, save, remove }
+  const rename = useCallback(
+    (id: string, name: string) => setGradients((list) => list.map((g) => (g.id === id ? { ...g, name } : g))),
+    [setGradients],
+  )
+
+  const nextName = `Meu degradê ${gradients.length + 1}`
+
+  return { gradients, save, remove, rename, nextName }
 }
 
 export function useFavorites() {

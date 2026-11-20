@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { POPULAR_PALETTES } from '../data/palettes'
 import { buildGradient } from '../lib/gradient'
+import { montarPath } from '../lib/share'
 import { useFavorites, useSavedGradients, useSavedPalettes, type SavedGradient } from '../lib/storage'
 import { Icon } from './Icon'
 
 type Tab = 'favoritos' | 'paletas' | 'degrades'
 
-const montarHref = (colors: string[]) => `/montar?cores=${colors.map((c) => c.replace('#', '')).join('-')}`
 
 function Strip({ colors }: { colors: string[] }) {
   return (
@@ -24,33 +24,80 @@ function Row({
   preview,
   onOpen,
   onRemove,
+  onRename,
   removeLabel,
 }: {
   name: string
   preview: ReactNode
   onOpen: () => void
   onRemove: () => void
+  onRename?: (name: string) => void
   removeLabel: string
 }) {
+  const [editing, setEditing] = useState(false)
+
+  const finish = (value: string) => {
+    const next = value.trim()
+    if (next && next !== name) onRename?.(next)
+    setEditing(false)
+  }
+
   return (
     <li className="group relative">
-      <button
-        type="button"
-        onClick={onOpen}
-        className="w-full rounded-[12px] p-2 text-left transition hover:bg-black/5"
-      >
-        {preview}
-        <span className="mt-1.5 block truncate pr-8 font-mono text-[15px] font-medium">{name}</span>
-      </button>
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={removeLabel}
-        title={removeLabel}
-        className="absolute right-2 bottom-2 grid size-7 place-items-center rounded-full text-icon opacity-50 transition group-hover:opacity-100 hover:bg-black/10"
-      >
-        <Icon name="close" />
-      </button>
+      {editing ? (
+        <div className="rounded-[12px] bg-black/5 p-2">
+          {preview}
+          <input
+            autoFocus
+            defaultValue={name}
+            maxLength={40}
+            aria-label="Novo nome"
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={(e) => finish(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') finish(e.currentTarget.value)
+              if (e.key === 'Escape') {
+                e.stopPropagation() // não fecha o painel, só cancela a edição
+                setEditing(false)
+              }
+            }}
+            className="mt-1.5 w-full rounded-[6px] border border-black/30 bg-white px-2 py-0.5 font-mono text-[15px] font-medium outline-none focus:border-black/60"
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onOpen}
+          className="w-full rounded-[12px] p-2 text-left transition hover:bg-black/5"
+        >
+          {preview}
+          <span className="mt-1.5 block truncate pr-16 font-mono text-[15px] font-medium">{name}</span>
+        </button>
+      )}
+      {!editing && (
+        <div className="absolute right-2 bottom-2 flex gap-0.5">
+          {onRename && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              aria-label={`Renomear ${name}`}
+              title="Renomear"
+              className="grid size-7 place-items-center rounded-full text-[15px] text-icon opacity-50 transition group-hover:opacity-100 hover:bg-black/10"
+            >
+              ✎
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={removeLabel}
+            title={removeLabel}
+            className="grid size-7 place-items-center rounded-full text-icon opacity-50 transition group-hover:opacity-100 hover:bg-black/10"
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+      )}
     </li>
   )
 }
@@ -61,8 +108,8 @@ export function SavedDrawer({ open, onClose }: { open: boolean; onClose: () => v
   const navigate = useNavigate()
   const panelRef = useRef<HTMLDivElement>(null)
   const { favorites, toggle } = useFavorites()
-  const { palettes, remove: removePalette } = useSavedPalettes()
-  const { gradients, remove: removeGradient } = useSavedGradients()
+  const { palettes, remove: removePalette, rename: renamePalette } = useSavedPalettes()
+  const { gradients, remove: removeGradient, rename: renameGradient } = useSavedGradients()
   const favPalettes = POPULAR_PALETTES.filter((p) => favorites.includes(p.id))
 
   useEffect(() => {
@@ -142,7 +189,7 @@ export function SavedDrawer({ open, onClose }: { open: boolean; onClose: () => v
                     key={p.id}
                     name={p.name}
                     preview={<Strip colors={p.colors} />}
-                    onOpen={() => go(montarHref(p.colors))}
+                    onOpen={() => go(montarPath(p.colors))}
                     onRemove={() => toggle(p.id)}
                     removeLabel={`Desfavoritar ${p.name}`}
                   />
@@ -160,8 +207,9 @@ export function SavedDrawer({ open, onClose }: { open: boolean; onClose: () => v
                     key={p.id}
                     name={p.name}
                     preview={<Strip colors={p.colors} />}
-                    onOpen={() => go(montarHref(p.colors))}
+                    onOpen={() => go(montarPath(p.colors))}
                     onRemove={() => removePalette(p.id)}
+                    onRename={(name) => renamePalette(p.id, name)}
                     removeLabel={`Excluir ${p.name}`}
                   />
                 ))}
@@ -185,6 +233,7 @@ export function SavedDrawer({ open, onClose }: { open: boolean; onClose: () => v
                     }
                     onOpen={() => go('/degrade', { gradient: g })}
                     onRemove={() => removeGradient(g.id)}
+                    onRename={(name) => renameGradient(g.id, name)}
                     removeLabel={`Excluir ${g.name}`}
                   />
                 ))}
